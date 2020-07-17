@@ -96,6 +96,7 @@ func init() {
 	SecurityAgentCmd.AddCommand(startCmd)
 	SecurityAgentCmd.AddCommand(versionCmd)
 	SecurityAgentCmd.AddCommand(complianceCmd)
+	SecurityAgentCmd.AddCommand(runtimeCmd)
 
 	SecurityAgentCmd.PersistentFlags().StringVarP(&confPath, "cfgpath", "c", "", "path to directory containing datadog.yaml")
 	SecurityAgentCmd.PersistentFlags().BoolVarP(&flagNoColor, "no-color", "n", false, "disable color output")
@@ -188,6 +189,11 @@ func start(cmd *cobra.Command, args []string) error {
 		return log.Errorf("Error while starting api server, exiting: %v", err)
 	}
 	defer srv.Stop()
+
+	// start runtime security agent
+	if err = startRuntimeSecurity(stopper); err != nil {
+		return err
+	}
 
 	log.Infof("Datadog Security Agent is now running.")
 
