@@ -1,4 +1,4 @@
-package gobpf
+package ebpf
 
 import (
 	"sync/atomic"

@@ -1,4 +1,4 @@
-package gobpf
+package ebpf
 
 import (
 	"errors"
@@ -7,8 +7,6 @@ import (
 	"log"
 	"unsafe"
 
-	"github.com/DataDog/datadog-agent/pkg/ebpf/probe"
-	"github.com/DataDog/datadog-agent/pkg/ebpf/probe/types"
 	bpflib "github.com/iovisor/gobpf/elf"
 )
 
@@ -45,7 +43,7 @@ func (t *Table) Delete(key []byte) error {
 	return t.module.DeleteElement(t.Map, unsafe.Pointer(&key[0]))
 }
 
-func (m *Module) RegisterPerfMap(perfMap *types.PerfMap) (probe.PerfMap, error) {
+func (m *Module) RegisterPerfMap(perfMap *PerfMapDefinition) (*PerfMap, error) {
 	bufferLength := perfMap.BufferLength
 	if bufferLength == 0 {
 		bufferLength = DefaultBufferLength
@@ -70,13 +68,13 @@ func (m *Module) RegisterPerfMap(perfMap *types.PerfMap) (probe.PerfMap, error) 
 	}, nil
 }
 
-func (m *Module) RegisterTable(table *types.Table) (probe.Table, error) {
-	hashMap := m.Map(table.Name)
+func (m *Module) RegisterTable(name string) (*Table, error) {
+	hashMap := m.Map(name)
 	if hashMap == nil {
-		return nil, fmt.Errorf("failed to find table '%s'", table.Name)
+		return nil, fmt.Errorf("failed to find table '%s'", name)
 	}
 
-	return &Table{Map: m.Map(table.Name), module: m.Module}, nil
+	return &Table{Map: m.Map(name), module: m.Module}, nil
 }
 
 func NewModuleFromReader(reader io.ReaderAt) (*Module, error) {

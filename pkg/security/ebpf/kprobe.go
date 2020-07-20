@@ -1,15 +1,13 @@
-package gobpf
+package ebpf
 
 import (
 	"fmt"
 	"os"
 	"strings"
 	"syscall"
-
-	"github.com/DataDog/datadog-agent/pkg/ebpf/probe/types"
 )
 
-func (m *Module) RegisterKprobe(k *types.KProbe) error {
+func (m *Module) RegisterKprobe(k *KProbe) error {
 	if k.EntryFunc != "" {
 		if err := m.EnableKprobe(k.EntryFunc, 512); err != nil {
 			return fmt.Errorf("failed to load Kprobe %v: %s", k.EntryFunc, err)
@@ -24,7 +22,7 @@ func (m *Module) RegisterKprobe(k *types.KProbe) error {
 	return nil
 }
 
-func (m *Module) UnregisterKprobe(k *types.KProbe) error {
+func (m *Module) UnregisterKprobe(k *KProbe) error {
 	if k.EntryFunc != "" {
 		funcName := strings.TrimPrefix(k.EntryFunc, "kprobe/")
 		if err := disableKprobe("r" + funcName); err != nil {
