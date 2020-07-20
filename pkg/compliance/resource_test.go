@@ -31,7 +31,9 @@ file:
 const testResourceFilePathFromCommand = `
 file:
   pathFrom:
-  - command: systemctl show -p FragmentPath docker.service
+  - command:
+      shell:
+        run: systemctl show -p FragmentPath docker.service
   report:
   - property: owner
     kind: attribute
@@ -42,7 +44,7 @@ file:
   path: /etc/docker/daemon.json
   report:
   - property: tlsverify
-    kind: jsonpath
+    kind: jsonquery
 `
 const testResourceProcessReportingFlag = `
 process:
@@ -76,7 +78,9 @@ audit:
 const testResourceAuditPathFromCommand = `
 audit:
   pathFrom:
-  - command: systemctl show -p FragmentPath docker.socket
+  - command:
+      shell:
+        run: systemctl show -p FragmentPath docker.socket
   report:
   - property: enabled
     kind: attribute
@@ -151,7 +155,11 @@ func TestResources(t *testing.T) {
 				File: &File{
 					PathFrom: ValueFrom{
 						{
-							Command: `systemctl show -p FragmentPath docker.service`,
+							Command: &ValueFromCommand{
+								ShellCmd: &ShellCmd{
+									Run: `systemctl show -p FragmentPath docker.service`,
+								},
+							},
 						},
 					},
 					Report: Report{
@@ -164,7 +172,7 @@ func TestResources(t *testing.T) {
 			},
 		},
 		{
-			name:  "file reporting jsonpath property",
+			name:  "file reporting jsonquery property",
 			input: testResourceFileReportingJSONPath,
 			expected: Resource{
 				File: &File{
@@ -172,7 +180,7 @@ func TestResources(t *testing.T) {
 					Report: Report{
 						{
 							Property: "tlsverify",
-							Kind:     PropertyKindJSONPath,
+							Kind:     PropertyKindJSONQuery,
 						},
 					},
 				},
@@ -241,7 +249,11 @@ func TestResources(t *testing.T) {
 				Audit: &Audit{
 					PathFrom: ValueFrom{
 						{
-							Command: `systemctl show -p FragmentPath docker.socket`,
+							Command: &ValueFromCommand{
+								ShellCmd: &ShellCmd{
+									Run: `systemctl show -p FragmentPath docker.socket`,
+								},
+							},
 						},
 					},
 					Report: Report{
