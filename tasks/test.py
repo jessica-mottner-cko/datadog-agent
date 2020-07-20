@@ -477,20 +477,61 @@ def make_simple_gitlab_yml(ctx, jobs_to_process, yml_file_src='.gitlab-ci.yml', 
     with open(yml_file_dest, 'w') as f:
         yaml.dump(out, f)
 
+
 @task
-def make_kitchen_gitlab_yml(ctx, yml_file_src='.gitlab-ci.yml', yml_file_dest='.gitlab-ci.yml'):
+def make_kitchen_gitlab_yml(ctx):
     """
     Replaces .gitlab-ci.yml with one containing only the steps needed to run kitchen-tests
     """
     with open('.gitlab-ci.yml') as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
 
-    data['stages'] = ['testkitchen_cleanup']
-    jobs = []
-    for k,v in data.items():
-        if isinstance(v, dict) and v.get('stage', None) in ([None] + data['stages']):
-            jobs.append(k)
-    return make_simple_gitlab_yml(ctx, ','.join(jobs), yml_file_src, yml_file_dest)
+    data['stages'] = [
+        'deps_build',
+        'binary_build',
+        'package_build',
+        'testkitchen_deploy',
+        'testkitchen_testing',
+        'testkitchen_cleanup',
+    ]
+    for k, v in data.items():
+        if isinstance(v, dict) and v.get('stage', None) not in ([None] + data['stages']):
+            del data[k]
+            continue
+        if (
+            isinstance(v, dict)
+            and v.get('stage', None) == 'binary_build'
+            and k != 'build_system-probe-arm64'
+            and k != 'build_system-probe-x64'
+            and k != 'build_system-probe_with-bcc-arm64'
+            and k != 'build_system-probe_with-bcc-x64'
+        ):
+            del data[k]
+            continue
+        if 'except' in v:
+            del v['except']
+        if 'only' in v:
+            del v['only']
+        if len(v) == 0:
+            del data[k]
+            continue
+
+    for k, v in data.items():
+        if 'extends' in v:
+            extended = v['extends']
+            if extended not in data:
+                del data[k]
+        if 'needs' in v:
+            needed = v['needs']
+            new_needed = []
+            for n in needed:
+                if n in data:
+                    new_needed.append(n)
+            v['needs'] = new_needed
+
+    with open('.gitlab-ci.yml', 'w') as f:
+        yaml.dump(data, f, default_style='"')
+
 
 @task
 def check_gitlab_broken_dependencies(ctx):
